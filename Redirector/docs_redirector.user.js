@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Docs Redirector
 // @namespace    http://tampermonkey.net/
-// @version      1.3
+// @version      1.4
 // @description  自动将.NET和Unity文档和Python的英文链接重定向到中文链接；通过快捷键 Ctrl+Shift+L 全局控制是否启用跳转。快捷键在所有learn.microsoft.com和docs.unity3d.com和docs.python.org页面下生效。
 // @author       cheng
 // @match        *://learn.microsoft.com/*
@@ -98,7 +98,7 @@
 
 
     let isRedirectEnabled = GM_getValue(KEY, true);
-    let curName
+    let curName = ""
 
     UpdateStatus();
 
@@ -106,10 +106,11 @@
         if (event.ctrlKey && event.shiftKey && event.key === 'L') {
             isRedirectEnabled = !isRedirectEnabled;
             GM_setValue(KEY, isRedirectEnabled);
+            UpdateStatus();
             const message = `${curName}文档自动切换为中文已${isRedirectEnabled ? '启用' : '禁用'}`;
             //alert(message);
             showToast(message, isRedirectEnabled);
-            UpdateStatus();
+
         }
     });
 
@@ -125,12 +126,13 @@
         const currentUrl = window.location.href;
 
         for (const rule of redirectRules) {
-            curName = rule.name;
+
             if (isRedirectEnabled) {
                 if (rule.pattern.test(currentUrl)) {
                     const newUrl = currentUrl.replace(rule.pattern, rule.replacement);
                     if (newUrl !== currentUrl) {
                         window.location.href = newUrl;
+                        curName = rule.name;
                         break;
                     }
                 }
@@ -139,6 +141,7 @@
                     const newUrl = currentUrl.replace(rule.reversePattern, rule.reverseReplacement);
                     if (newUrl !== currentUrl) {
                         window.location.href = newUrl;
+                        curName = rule.name;
                         break;
                     }
                 }
