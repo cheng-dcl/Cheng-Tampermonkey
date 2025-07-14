@@ -1,16 +1,17 @@
 // ==UserScript==
-// @name         Unity & .NET ZH Docs Redirector
+// @name         Docs Redirector
 // @namespace    http://tampermonkey.net/
-// @version      1.1
-// @description  自动将.NET和Unity文档的英文链接重定向到中文链接；通过快捷键 Ctrl+Shift+L 全局控制是否启用跳转。快捷键在所有learn.microsoft.com和docs.unity3d.com页面下生效,主要适用于Rider文档跳转。
+// @version      1.3
+// @description  自动将.NET和Unity文档和Python的英文链接重定向到中文链接；通过快捷键 Ctrl+Shift+L 全局控制是否启用跳转。快捷键在所有learn.microsoft.com和docs.unity3d.com和docs.python.org页面下生效。
 // @author       cheng
 // @match        *://learn.microsoft.com/*
 // @match        *://docs.unity3d.com/*
+// @match        *://docs.python.org/*
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_addStyle
-// @updateURL    https://raw.githubusercontent.com/cheng-dcl/Cheng-Tampermonkey/main/Redirector/unity_net_docs_redirector.user.js
-// @downloadURL  https://raw.githubusercontent.com/cheng-dcl/Cheng-Tampermonkey/main/Redirector/unity_net_docs_redirector.user.js
+// @updateURL    https://raw.githubusercontent.com/cheng-dcl/Cheng-Tampermonkey/main/Redirector/docs_redirector.user.js
+// @downloadURL  https://raw.githubusercontent.com/cheng-dcl/Cheng-Tampermonkey/main/Redirector/docs_redirector.user.js
 // ==/UserScript==
 
 (function () {
@@ -63,45 +64,41 @@
 
     const KEY = 'isRedirectEnabled';
 
-    // const redirectRules = [
-    //     {
-    //         pattern: /https:\/\/learn\.microsoft\.com\/en-us\/dotnet\/api\/(.*)/,
-    //         replacement: 'https://learn.microsoft.com/zh-cn/dotnet/api/$1'
-    //     },
-    //     {
-    //         pattern: /https:\/\/docs\.unity3d\.com\/(\d+\.\d+)\/Documentation\/ScriptReference\/(.*)/,
-    //         replacement: 'https://docs.unity3d.com/cn/current/ScriptReference/$2'
-    //     },
-    //     {
-    //         pattern: /https:\/\/docs\.unity3d\.com\/ScriptReference\/(.*)/,
-    //         replacement: 'https://docs.unity3d.com/cn/current/ScriptReference/$1'
-    //     }
-    // ];
-
     const redirectRules = [
         {
+            name: ".Net",
             pattern: /https:\/\/learn\.microsoft\.com\/en-us\/dotnet\/api\/(.*)/,
             replacement: 'https://learn.microsoft.com/zh-cn/dotnet/api/$1',
             reversePattern: /https:\/\/learn\.microsoft\.com\/zh-cn\/dotnet\/api\/(.*)/,
             reverseReplacement: 'https://learn.microsoft.com/en-us/dotnet/api/$1'
         },
         {
+            name: "Unity",
             pattern: /https:\/\/docs\.unity3d\.com\/(\d+\.\d+)\/Documentation\/ScriptReference\/(.*)/,
             replacement: 'https://docs.unity3d.com/cn/current/ScriptReference/$2',
             reversePattern: /https:\/\/docs\.unity3d\.com\/cn\/current\/ScriptReference\/(.*)/,
             reverseReplacement: 'https://docs.unity3d.com/2022.3/Documentation/ScriptReference/$1' // 注意这里写死了版本号，可优化
         },
         {
+            name: "Unity",
             pattern: /https:\/\/docs\.unity3d\.com\/ScriptReference\/(.*)/,
             replacement: 'https://docs.unity3d.com/cn/current/ScriptReference/$1',
             reversePattern: /https:\/\/docs\.unity3d\.com\/cn\/current\/ScriptReference\/(.*)/,
             reverseReplacement: 'https://docs.unity3d.com/ScriptReference/$1'
+        },
+        {
+            name: "Python",
+            pattern: /https:\/\/docs\.python\.org\/(?!zh-cn\/)(.*)/,
+            replacement: 'https://docs.python.org/zh-cn/$1',
+            reversePattern: /https:\/\/docs\.python\.org\/zh-cn\/(.*)/,
+            reverseReplacement: 'https://docs.python.org/$1'
         }
     ];
 
 
 
     let isRedirectEnabled = GM_getValue(KEY, true);
+    let curName
 
     UpdateStatus();
 
@@ -109,7 +106,7 @@
         if (event.ctrlKey && event.shiftKey && event.key === 'L') {
             isRedirectEnabled = !isRedirectEnabled;
             GM_setValue(KEY, isRedirectEnabled);
-            const message = `Unity & .NET 文档自动切换为中文已${isRedirectEnabled ? '启用' : '禁用'}`;
+            const message = `${curName}文档自动切换为中文已${isRedirectEnabled ? '启用' : '禁用'}`;
             //alert(message);
             showToast(message, isRedirectEnabled);
             UpdateStatus();
@@ -128,6 +125,7 @@
         const currentUrl = window.location.href;
 
         for (const rule of redirectRules) {
+            curName = rule.name;
             if (isRedirectEnabled) {
                 if (rule.pattern.test(currentUrl)) {
                     const newUrl = currentUrl.replace(rule.pattern, rule.replacement);
@@ -147,5 +145,4 @@
             }
         }
     }
-
 })();
